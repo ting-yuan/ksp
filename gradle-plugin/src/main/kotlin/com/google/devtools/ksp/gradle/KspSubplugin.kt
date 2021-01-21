@@ -205,6 +205,13 @@ open class KspTask : KspTaskJ() {
     ) {
         super.setupCompilerArgs(args, defaultsOnly, ignoreClasspathResolutionErrors)
         args.addPluginOptions(options)
+
+        // Prevent other compiler plugins from being loaded in KSP's task.
+        // FIXME: need a change in upstream to allow this explicitly.
+        // TODO: allow or disallow individual compiler plugins.
+        val cfg = project.configurations.getByName(PLUGIN_CLASSPATH_CONFIGURATION_NAME)
+        val dep = cfg.dependencies.single { it.name == KspGradleSubplugin.KSP_ARTIFACT_NAME }
+        args.pluginClasspaths = cfg.files(dep).map { it.canonicalPath }.toTypedArray()
     }
 }
 
