@@ -252,6 +252,15 @@ class KspGradleSubplugin @Inject internal constructor(private val registry: Tool
             )
         }
 
+        // Add generated source set to the input source set
+        // On Gradle's incrementality: it should be OK because output's timestamp == input's timestamp.
+        // On the source set passed to processor: it is OK because all outputs are cleaned in the beginning.
+        kotlinCompilation.kotlinSourceSets.forEach {
+            if (it.name == sourceSetName) {
+                it.kotlin.srcDirs(kotlinOutputDir, javaOutputDir)
+            }
+        }
+
         return project.provider { emptyList() }
     }
 
