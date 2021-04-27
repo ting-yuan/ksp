@@ -22,6 +22,7 @@ import com.google.devtools.ksp.symbol.impl.findPsi
 import com.google.devtools.ksp.symbol.impl.java.KSFunctionDeclarationJavaImpl
 import com.google.devtools.ksp.symbol.impl.java.KSPropertyDeclarationJavaImpl
 import com.google.devtools.ksp.visitor.KSDefaultVisitor
+import com.google.devtools.ksp.visitor.KSEmptyVisitor
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.PsiClassReferenceType
 import com.intellij.util.containers.MultiMap
@@ -39,6 +40,7 @@ import org.jetbrains.kotlin.incremental.components.ScopeKind
 import org.jetbrains.kotlin.incremental.storage.BasicMap
 import org.jetbrains.kotlin.incremental.storage.CollectionExternalizer
 import org.jetbrains.kotlin.incremental.storage.FileToPathConverter
+import org.jetbrains.kotlin.incremental.storage.StringCollectionExternalizer
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperclassesWithoutAny
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.supertypes
@@ -49,7 +51,17 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.*
 
-class FileToSymbolsMap(storageFile: File) : BasicMap<File, Collection<LookupSymbol>>(storageFile, FileKeyDescriptor, CollectionExternalizer(LookupSymbolExternalizer, { HashSet() })) {
+abstract class PersistentMap<K : Comparable<K>, V>(
+    storageFile: File,
+    keyDescriptor: KeyDescriptor<K>,
+    valueExternalizer: DataExternalizer<V>
+) : BasicMap<K, V>(storageFile, keyDescriptor, valueExternalizer) {
+    abstract operator fun get(key: K): V?
+    abstract operator fun set(key: K, value: V)
+    abstract fun remove(key: K)
+}
+
+class FileToSymbolsMap(storageFile: File) : PersistentMap<File, Collection<LookupSymbol>>(storageFile, FileKeyDescriptor, CollectionExternalizer(LookupSymbolExternalizer, { HashSet() })) {
     override fun dumpKey(key: File): String = key.toString()
 
     override fun dumpValue(value: Collection<LookupSymbol>): String = value.toString()
@@ -58,13 +70,13 @@ class FileToSymbolsMap(storageFile: File) : BasicMap<File, Collection<LookupSymb
         storage.append(file, listOf(symbol))
     }
 
-    operator fun get(key: File): Collection<LookupSymbol>? = storage[key]
+    override operator fun get(key: File): Collection<LookupSymbol>? = storage[key]
 
-    operator fun set(key: File, symbols: Set<LookupSymbol>) {
+    override operator fun set(key: File, symbols: Collection<LookupSymbol>) {
         storage[key] = symbols
     }
 
-    fun remove(key: File) {
+    override fun remove(key: File) {
         storage.remove(key)
     }
 
@@ -103,11 +115,11 @@ object FileExternalizer : DataExternalizer<File> {
     }
 }
 
-class FileToFilesMap(storageFile: File) : BasicMap<File, Collection<File>>(storageFile, FileKeyDescriptor, CollectionExternalizer(FileExternalizer, { HashSet() })) {
+class FileToFilesMap(storageFile: File) : PersistentMap<File, Collection<File>>(storageFile, FileKeyDescriptor, CollectionExternalizer(FileExternalizer, { HashSet() })) {
 
-    operator fun get(key: File): Collection<File>? = storage[key]
+    override operator fun get(key: File): Collection<File>? = storage[key]
 
-    operator fun set(key: File, value: Collection<File>) {
+    override operator fun set(key: File, value: Collection<File>) {
         storage[key] = value
     }
 
@@ -116,7 +128,7 @@ class FileToFilesMap(storageFile: File) : BasicMap<File, Collection<File>>(stora
     override fun dumpValue(value: Collection<File>) =
             value.dumpCollection()
 
-    fun remove(key: File) {
+    override fun remove(key: File) {
         storage.remove(key)
     }
 
@@ -147,6 +159,48 @@ object symbolCollector : KSDefaultVisitor<(LookupSymbol) -> Unit, Unit>() {
     }
 }
 
+class FileToStringsMap(storageFile: File) : PersistentMap<File, Collection<String>>(storageFile, FileKeyDescriptor, StringCollectionExternalizer) {
+
+    override operator fun get(key: File): Collection<String>? = storage[key]
+
+    override operator fun set(key: File, value: Collection<String>) {
+        storage[key] = value
+    }
+
+    override fun dumpKey(key: File): String = key.toString()
+
+    override fun dumpValue(value: Collection<String>) =
+        value.dumpCollection()
+
+    override fun remove(key: File) {
+        storage.remove(key)
+    }
+
+    val keys: Collection<File>
+        get() = storage.keys
+}
+
+object classVisitor : KSEmptyVisitor<(KSClassDeclaration) -> Unit, Unit>() {
+    override fun defaultHandler(node: KSNode, data: (KSClassDeclaration) -> Unit) = Unit
+
+    override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: (KSClassDeclaration) -> Unit) {
+        if (classDeclaration.isPrivate())
+            return
+
+        data(classDeclaration)
+
+        classDeclaration.declarations.forEach {
+            it.accept(this, data)
+        }
+    }
+
+    override fun visitFile(file: KSFile, data: (KSClassDeclaration) -> Unit) {
+        file.declarations.forEach {
+            it.accept(this, data)
+        }
+    }
+}
+
 internal class RelativeFileToPathConverter(val baseDir: File) : FileToPathConverter {
     override fun toPath(file: File): String = file.path
     override fun toFile(path: String): File = File(path).relativeTo(baseDir)
@@ -159,6 +213,18 @@ class IncrementalContext(
 ) {
     // Symbols defined in changed files. This is used to update symbolsMap in the end.
     private val updatedSymbols = MultiMap.createSet<File, LookupSymbol>()
+
+    // Referenced names of super types in changed files. This is used to update supersMap in the end.
+    private val updatedSupers = MultiMap.createSet<File, String>()
+
+    // Simple names of sealed classes / interfaces in changed files. This is used to update sealedMap in the end.
+    private val updatedSealed = MultiMap.createSet<File, String>()
+
+    // Referenced names of super types defined in each file. This is saved across processing.
+    private val supersMap = FileToStringsMap(File(options.cachesDir, "supers"))
+
+    // Simple names of sealed classes / interfaces defined in each file. This is saved across processing.
+    private val sealedMap = FileToStringsMap(File(options.cachesDir, "sealed"))
 
     // Symbols defined in each file. This is saved across processing.
     private val symbolsMap = FileToSymbolsMap(File(options.cachesDir, "symbols"))
@@ -192,10 +258,28 @@ class IncrementalContext(
         options.cachesDir.deleteRecursively()
     }
 
+    private fun collectSupers(classDeclaration: KSClassDeclaration): Collection<String> {
+        if (classDeclaration.isPrivate())
+            return emptyList()
+
+        return classDeclaration.superTypes.map { (it.element as KSClassifierReference).referencedName() }
+    }
+
+    private fun collectSealed(classDeclaration: KSClassDeclaration): String? {
+        if (classDeclaration.isPrivate() || Modifier.SEALED !in classDeclaration.modifiers)
+            return null
+
+        return classDeclaration.simpleName.asString()
+    }
+
     private fun collectDefinedSymbols(ksFiles: Collection<KSFile>) {
         ksFiles.forEach { file ->
             file.accept(symbolCollector) {
                 updatedSymbols.putValue(file.relativeFile, it)
+            }
+            file.accept(classVisitor) {
+                updatedSupers.putValues(file.relativeFile, collectSupers(it))
+                collectSealed(it)?.let { updatedSealed.putValue(file.relativeFile, it) }
             }
         }
     }
@@ -208,8 +292,10 @@ class IncrementalContext(
         }
     }
 
+    // FIXME: typealias for sealed
     private fun calcDirtySetByDeps(ksFiles: List<KSFile>): Set<File> {
         val changedSyms = mutableSetOf<LookupSymbol>()
+        val dirtyFiles = mutableSetOf<File>().apply { addAll(modified + removed) }
 
         // Parse and add newly defined symbols in modified files.
         ksFiles.filter { it.relativeFile in modified }.forEach { file ->
@@ -217,17 +303,49 @@ class IncrementalContext(
                 updatedSymbols.putValue(file.relativeFile, it)
                 changedSyms.add(it)
             }
+            file.accept(classVisitor) {
+                updatedSupers.putValues(file.relativeFile, collectSupers(it))
+                collectSealed(it)?.let { updatedSealed.putValue(file.relativeFile, it) }
+            }
+        }
+
+        // The reverse map needs to be calculated either here or when deleting removed entries.
+        // A file -> sealed class map is easier for deletion.
+        val rSealedMap = MultiMap.createSet<String, File>()
+        sealedMap.keys.forEach { file ->
+            sealedMap[file]!!.forEach { sealed ->
+                rSealedMap.putValue(sealed, file)
+            }
+        }
+
+        val rUpdatedSealed = MultiMap.createSet<String, File>()
+        updatedSealed.keySet().forEach { file ->
+            updatedSealed[file].forEach { sealed ->
+                rUpdatedSealed.putValue(sealed, file)
+            }
+        }
+
+        // Invalidate files that contain sealed subclasses.
+        updatedSupers.keySet().flatMap { updatedSupers[it] }.toSet().forEach {
+            dirtyFiles.addAll(rUpdatedSealed[it])
+            dirtyFiles.addAll(rSealedMap[it])
+        }
+
+        removed.forEach {
+            supersMap[it]?.forEach {
+                dirtyFiles.addAll(rSealedMap[it])
+            }
         }
 
         // Add previously defined symbols in removed and modified files
-        ksFiles.filter { it.relativeFile in removed || it.relativeFile in modified }.forEach { file ->
-            symbolsMap[file.relativeFile]?.let {
+        dirtyFiles.forEach { file ->
+            symbolsMap[file]?.let {
                 changedSyms.addAll(it)
             }
         }
 
         // For each changed symbol, either changed, modified or removed, invalidate files that looked them up, recursively.
-        val invalidator = DepInvalidator(lookupCache, symbolsMap, ksFiles.filter { it.relativeFile in removed || it.relativeFile in modified }.map { it.relativeFile })
+        val invalidator = DepInvalidator(lookupCache, symbolsMap, dirtyFiles.filterNot{ it in removed })
         changedSyms.forEach {
             invalidator.invalidate(it)
         }
@@ -460,28 +578,45 @@ class IncrementalContext(
         updateLookupCache(dirtyFiles, removedOutputs)
 
         // Update symbolsMap
-        if (!rebuild) {
+        fun <K: Comparable<K>, V> update(m: PersistentMap<K, Collection<V>>, u: MultiMap<K, V>) {
             // Update symbol caches from modified files.
-            updatedSymbols.keySet().forEach {
-                symbolsMap.set(it, updatedSymbols[it].toSet())
+            u.keySet().forEach {
+                m.set(it, u[it].toSet())
             }
+        }
 
+        fun <K: Comparable<K>, V> remove(m: PersistentMap<K, Collection<V>>, removedKeys: Collection<K>) {
             // Remove symbol caches from removed files.
-            removed.forEach {
-                symbolsMap.remove(it)
+            removedKeys.forEach {
+                m.remove(it)
             }
+        }
 
-            removedOutputs.forEach {
-                symbolsMap.remove(it.absoluteFile)
-            }
+        if (!rebuild) {
+            update(sealedMap, updatedSealed)
+            remove(sealedMap, removed + removedOutputs)
+
+            update(symbolsMap, updatedSymbols)
+            remove(symbolsMap, removed + removedOutputs)
+
+            update(supersMap, updatedSupers)
+            remove(supersMap, removed + removedOutputs)
         } else {
             symbolsMap.clean()
-            updatedSymbols.keySet().forEach {
-                symbolsMap.set(it, updatedSymbols[it].toSet())
-            }
+            update(symbolsMap, updatedSymbols)
+
+            supersMap.clean()
+            update(supersMap, updatedSupers)
+
+            sealedMap.clean()
+            update(sealedMap, updatedSealed)
         }
         symbolsMap.flush(false)
         symbolsMap.close()
+        sealedMap.flush(false)
+        sealedMap.close()
+        supersMap.flush(false)
+        supersMap.close()
     }
 
     fun registerGeneratedFiles(newFiles: Collection<KSFile>) = closeFilesOnException {
@@ -493,6 +628,8 @@ class IncrementalContext(
             return f()
         } catch (e: Exception) {
             symbolsMap.close()
+            sealedMap.close()
+            supersMap.close()
             lookupCache.close()
             sourceToOutputsMap.close()
             throw e
@@ -675,7 +812,7 @@ class IncrementalContext(
 internal class DepInvalidator(
         private val lookupCache: LookupStorage,
         private val symbolsMap: FileToSymbolsMap,
-        changedFiles: List<File>
+        changedFiles: Collection<File>
 ) {
     private val visitedSyms = mutableSetOf<LookupSymbol>()
     val visitedFiles = mutableSetOf<File>().apply { addAll(changedFiles) }
