@@ -52,6 +52,9 @@ import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.load.java.lazy.ModuleClassResolver
 import org.jetbrains.kotlin.load.java.lazy.descriptors.isJavaField
+import org.jetbrains.kotlin.load.kotlin.KotlinJvmBinaryClass
+import org.jetbrains.kotlin.load.kotlin.getContainingKotlinJvmBinaryClass
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.psiUtil.siblings
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.annotations.hasJvmStaticAnnotation
@@ -429,6 +432,20 @@ internal fun KSAnnotated.getInstanceForCurrentRound(): KSAnnotated? {
 internal fun <T> Sequence<T>.memoized() = MemoizedSequence(this)
 
 internal fun PropertyDescriptor.hasBackingFieldFixed(): Boolean {
+    if (this is DeserializedPropertyDescriptor) {
+        var hasBackingField = false
+        val propertyName = this.name
+        this.getContainingKotlinJvmBinaryClass()?.visitMembers(object : KotlinJvmBinaryClass.MemberVisitor {
+            override fun visitField(name: Name, desc: String, initializer: Any?): KotlinJvmBinaryClass.AnnotationVisitor? {
+                if (propertyName == name)
+                    hasBackingField = true
+                return null
+            }
+
+            override fun visitMethod(name: Name, desc: String) = null
+        }, null)
+        return hasBackingField
+    }
     // from: https://github.com/JetBrains/kotlin/blob/92d200e093c693b3c06e53a39e0b0973b84c7ec5/plugins/kotlin-serialization/kotlin-serialization-compiler/src/org/jetbrains/kotlinx/serialization/compiler/resolve/SerializableProperties.kt#L53
     return hasBackingField(BindingContext.EMPTY) || (this is DeserializedPropertyDescriptor && this.backingField != null) // workaround for TODO in .hasBackingField
         // workaround for overridden getter (val) and getter+setter (var) - in this case hasBackingField returning false
