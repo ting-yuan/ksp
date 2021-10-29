@@ -372,6 +372,11 @@ public class KotlinKSPTestGenerated extends AbstractKotlinKSPTest {
         runTest("testData/api/visibilities.kt");
     }
 
+    @TestMetadata("experiments.kt")
+    public void testExperiments() throws Exception {
+        runTest("testData/api/experiments.kt");
+    }
+
     @Override
     protected @NotNull List<KspTestFile> createTestFilesFromFile(@NotNull File file, @NotNull String expectedText) {
         return TestFiles.createTestFiles(file.getName(), expectedText, new TestFiles.TestFileFactory<TestModule, KspTestFile>() {
