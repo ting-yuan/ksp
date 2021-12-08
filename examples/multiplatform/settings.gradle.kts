@@ -8,6 +8,7 @@ pluginManagement {
     repositories {
         mavenCentral()
         gradlePluginPortal()
+        maven("https://oss.sonatype.org/content/repositories/comgoogledevtools-1090/")
     }
 }
 
