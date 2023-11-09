@@ -17,6 +17,7 @@ if (!extra.has("kspVersion")) {
 repositories {
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
+    mavenLocal()
 }
 
 plugins {
@@ -49,6 +50,7 @@ subprojects {
         mavenCentral()
         google()
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
+    mavenLocal()
         maven("https://www.jetbrains.com/intellij-repository/releases")
     }
     pluginManager.withPlugin("maven-publish") {

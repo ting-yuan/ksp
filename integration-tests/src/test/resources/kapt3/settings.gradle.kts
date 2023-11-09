@@ -10,6 +10,7 @@ pluginManagement {
         maven(testRepo)
         gradlePluginPortal()
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
+    mavenLocal()
     }
 }
 
