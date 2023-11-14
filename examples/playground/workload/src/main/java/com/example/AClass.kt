@@ -8,3 +8,8 @@ class AClass(private val a: Int, val b: String, val c: Double, val d: HELLO) {
     val p = "$a, $b, $c, ${d.foo()}"
     fun foo() = p
 }
+
+interface IService
+
+@com.google.auto.service.AutoService(IService::class)
+class IServiceImpl : IService
