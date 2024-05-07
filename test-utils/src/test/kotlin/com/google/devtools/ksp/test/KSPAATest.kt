@@ -654,4 +654,10 @@ class KSPAATest : AbstractKSPAATest() {
     fun testExitCode() {
         runTest("../test-utils/testData/api/exitCode.kt")
     }
+
+    @TestMetadata("newAnnotatedInMultipleRound")
+    @Test
+    fun testNewAnnotatedInMultipleRound() {
+        runTest("../kotlin-analysis-api/testData/newAnnotatedInMultipleRound.kt")
+    }
 }
