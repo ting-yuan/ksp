@@ -36,7 +36,20 @@
 // ErrorInAnnotationArgumentComposed invalid
 // ValidAnnotationArgumentType valid
 // END
+// MODULE: lib1
+// FILE: lib1.kt
+//annotation class ExampleAnnotation(val value: KClass<*> = String::class)
+annotation class ExampleAnnotation(val value: kotlin.reflect.KClass<*> = java.lang.String::class)
+
+// MODULE: main(lib1)
 // FILE: a.kt
+
+@ExampleAnnotation(String::class)
+class Example
+
+@ExampleAnnotation
+class Example2
+
 annotation class Anno(val i: Int)
 
 annotation class AnnoWithTypes(

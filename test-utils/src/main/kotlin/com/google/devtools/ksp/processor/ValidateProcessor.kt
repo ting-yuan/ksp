@@ -7,6 +7,7 @@ import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSNode
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.validate
 
 class ValidateProcessor : AbstractTestProcessor() {
@@ -23,6 +24,12 @@ class ValidateProcessor : AbstractTestProcessor() {
     override fun toResult(): List<String> = results
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
+        val example1 = resolver.getClassDeclarationByName("Example")!!.annotations.first()
+        val example2 = resolver.getClassDeclarationByName("Example2")!!.annotations.first()
+        val arg1 = example1.arguments.single()
+        val defaultArg1 = example1.defaultArguments.single()
+        val arg2 = example2.arguments.single()
+        val defaultArg2 = example2.defaultArguments.single()
         val ErrorInMember = resolver.getClassDeclarationByName("ErrorInMember")!!
         val SkipErrorInMember = resolver.getClassDeclarationByName("SkipErrorInMember")!!
         val GoodClass = resolver.getClassDeclarationByName("GoodClass")!!
