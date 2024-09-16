@@ -169,7 +169,7 @@ class KotlinFactories {
                         from = compilerOptions,
                         into = kspTask.compilerOptions
                     )
-                    kspTask.produceUnpackedKlib.set(false)
+                    kspTask.produceUnpackagedKlib.set(false)
                     kspTask.onlyIf {
                         // KonanTarget is not properly serializable, hence we should check by name
                         // see https://youtrack.jetbrains.com/issue/KT-61657.
@@ -178,15 +178,6 @@ class KotlinFactories {
                             it.name == konanTargetName
                         }
                     }
-                    kspTask.kotlinCompilerArgumentsLogLevel
-                        .value(project.kotlinPropertiesProvider.kotlinCompilerArgumentsLogLevel)
-                        .finalizeValueOnRead()
-                    kspTask.konanPropertiesService
-                        .value(KonanPropertiesBuildService.registerIfAbsent(project))
-                        .disallowChanges()
-                    kspTask.classLoadersCachingService
-                        .value(ClassLoadersCachingBuildService.registerIfAbsent(project))
-                        .disallowChanges()
                 }
             }
         }
