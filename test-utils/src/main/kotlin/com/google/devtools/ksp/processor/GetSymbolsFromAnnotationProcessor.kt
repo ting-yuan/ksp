@@ -26,6 +26,8 @@ class GetSymbolsFromAnnotationProcessor : AbstractTestProcessor() {
         resolver.getSymbolsWithAnnotation("A2", true).forEach { result.add(toString(it)) }
         result.add("==== Cnno in depth ====")
         resolver.getSymbolsWithAnnotation("Cnno", true).forEach { result.add(toString(it)) }
+        result.add("==== foo.bar.Dnno ====")
+        resolver.getSymbolsWithAnnotation("foo.bar.Dnno").forEach { result.add(toString(it)) }
         return emptyList()
     }
 

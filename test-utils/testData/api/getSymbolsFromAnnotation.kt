@@ -113,7 +113,19 @@
 // <set-?>:KSValueParameter
 // x:KSValueParameter
 // x:KSPropertyDeclaration
+// ==== foo.bar.Dnno ====
+// Burger:KSClassDeclaration
+// Sandwich:KSClassDeclaration
+// Burrito:KSClassDeclaration
+// Waffle:KSClassDeclaration
 // END
+
+// MODULE: lib
+// FILE: foo/bar/Dnno.kt
+package foo.bar
+annotation class Dnno
+
+// MODULE: main(lib)
 //FILE: annotations.kt
 annotation class Anno
 annotation class Bnno
@@ -159,3 +171,15 @@ class Burp
 
 @Anno
 typealias Flux = String
+
+@`foo.bar`.Dnno
+class Burger
+
+@foo.bar.Dnno
+class Sandwich
+
+@`foo`.bar.Dnno
+class Burrito
+
+@foo.`bar`.Dnno
+class Waffle

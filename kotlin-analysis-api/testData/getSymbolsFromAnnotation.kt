@@ -120,7 +120,19 @@
 // constructorParameterFoo:KSValueParameter
 // x:KSPropertyDeclaration
 // x:KSValueParameter
+// ==== foo.bar.Dnno ====
+// Burger:KSClassDeclaration
+// Sandwich:KSClassDeclaration
+// Burrito:KSClassDeclaration
+// Waffle:KSClassDeclaration
 // END
+
+// MODULE: lib
+// FILE: foo/bar/Dnno.kt
+package foo.bar
+annotation class Dnno
+
+// MODULE: main(lib)
 //FILE: annotations.kt
 annotation class Anno
 annotation class Bnno
@@ -173,3 +185,15 @@ enum class RGB{
     @Anno
     B
 }
+
+@`foo.bar`.Dnno
+class Burger
+
+@foo.bar.Dnno
+class Sandwich
+
+@`foo`.bar.Dnno
+class Burrito
+
+@foo.`bar`.Dnno
+class Waffle
