@@ -4,7 +4,6 @@ import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.Assert
-import org.junit.Assume
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -45,8 +44,6 @@ class PlaygroundIT(val useKSP2: Boolean) {
 
     @Test
     fun testPlayground() {
-        // FIXME: `clean` fails to delete files on windows.
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
         gradleRunner.buildAndCheck("clean", "build")
         gradleRunner.buildAndCheck("clean", "build")
@@ -54,7 +51,6 @@ class PlaygroundIT(val useKSP2: Boolean) {
 
     @Test
     fun testPlaygroundJDK8() {
-        // FIXME: `clean` fails to delete files on windows.
         File(project.root, "test-processor/build.gradle.kts").appendText(
             """
             kotlin {
@@ -73,7 +69,6 @@ class PlaygroundIT(val useKSP2: Boolean) {
             }
             """.trimIndent()
         )
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
         gradleRunner.buildAndCheck("clean", "build")
         gradleRunner.buildAndCheck("clean", "build")
@@ -81,8 +76,6 @@ class PlaygroundIT(val useKSP2: Boolean) {
 
     @Test
     fun testConfigurationOfConfiguration() {
-        // FIXME: `clean` fails to delete files on windows.
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root).withGradleVersion("8.0")
         gradleRunner.withArguments(":workload:dependencies", "--info").build().let {
             Assert.assertTrue(
@@ -95,8 +88,6 @@ class PlaygroundIT(val useKSP2: Boolean) {
     // Or use a project that depends on a builtin plugin like all-open and see if the build fails
     @Test
     fun testBlockOtherCompilerPlugins() {
-        // FIXME: `clean` fails to delete files on windows.
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         File(project.root, "workload/build.gradle.kts")
@@ -317,7 +308,6 @@ class PlaygroundIT(val useKSP2: Boolean) {
 
     @Test
     fun testProjectExtensionCompilerOptions() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val properties = File(project.root, "gradle.properties")
         properties.writeText(
             properties.readText().replace(

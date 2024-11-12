@@ -4,7 +4,6 @@ import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.Assert
-import org.junit.Assume
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,8 +33,6 @@ class KotlinConstsInJavaIT(useKSP2: Boolean) {
 
     @Test
     fun testKotlinConstsInJava() {
-        // FIXME: `clean` fails to delete files on windows.
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
         gradleRunner.buildAndCheck(":workload:kspKotlin")
 

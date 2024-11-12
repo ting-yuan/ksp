@@ -4,7 +4,6 @@ import Artifact
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.Assert
-import org.junit.Assume
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -126,8 +125,6 @@ class OutputDepsIt(val useKSP2: Boolean) {
 
     @Test
     fun testOutputDeps() {
-        // FIXME
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         gradleRunner.withArguments("assemble").build().let { result ->

@@ -203,8 +203,6 @@ class GradleCompilationTest(val useKSP2: Boolean) {
 
     @Test
     fun testCommandLineArgumentProvider() {
-        // FIXME
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         testRule.setupAppAsAndroidApp()
         testRule.appModule.addSource("Foo.kt", "class Foo")
         testRule.appModule.addSource(
@@ -328,7 +326,6 @@ class GradleCompilationTest(val useKSP2: Boolean) {
 
     @Test
     fun commandLineArgumentIsIncludedInApoptionsWhenAddedInKspTask() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         testRule.setupAppAsAndroidApp()
         testRule.appModule.dependencies.addAll(
             listOf(

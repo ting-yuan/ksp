@@ -45,7 +45,6 @@ class KMPImplementedIT(val useKSP2: Boolean) {
 
     @Test
     fun testJvm() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         gradleRunner.withArguments(
@@ -69,7 +68,6 @@ class KMPImplementedIT(val useKSP2: Boolean) {
 
     @Test
     fun testJvmErrorLog() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         File(project.root, "workload-jvm/build.gradle.kts").appendText("\nksp { arg(\"exception\", \"process\") }\n")
@@ -86,7 +84,6 @@ class KMPImplementedIT(val useKSP2: Boolean) {
 
     @Test
     fun testJs() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         gradleRunner.withArguments(
@@ -110,7 +107,6 @@ class KMPImplementedIT(val useKSP2: Boolean) {
 
     @Test
     fun triggerException() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
         val path = "workload/src/commonMain/kotlin/com/example/FooBar.kt"
         val file = File(project.root, path)
@@ -142,7 +138,6 @@ class KMPImplementedIT(val useKSP2: Boolean) {
 
     @Test
     fun testWasm() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         gradleRunner.withArguments(
@@ -166,7 +161,6 @@ class KMPImplementedIT(val useKSP2: Boolean) {
 
     @Test
     fun testDefaultArgumentsImpl() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         // FIXME: KSP1
         Assume.assumeTrue(useKSP2)
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
@@ -193,7 +187,6 @@ class AnnoOnProperty {
 
     @Test
     fun testJsErrorLog() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         File(project.root, "workload-js/build.gradle.kts").appendText("\nksp { arg(\"exception\", \"process\") }\n")
@@ -223,7 +216,6 @@ class AnnoOnProperty {
 
     @Test
     fun testAndroidNative() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         gradleRunner.withArguments(
@@ -252,7 +244,6 @@ class AnnoOnProperty {
 
     @Test
     fun testLinuxX64() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
         val genDir = File(project.root, "workload-linuxX64/build/generated/ksp/linuxX64/linuxX64Main/kotlin")
 
@@ -305,7 +296,6 @@ class AnnoOnProperty {
     @Ignore
     @Test
     fun testNonEmbeddableArtifact() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         gradleRunner.withArguments(
@@ -328,7 +318,6 @@ class AnnoOnProperty {
 
     @Test
     fun testLinuxX64ErrorLog() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         File(project.root, "workload-linuxX64/build.gradle.kts")
@@ -391,7 +380,6 @@ class AnnoOnProperty {
 
     @Test
     fun testMainConfiguration() {
-        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows", ignoreCase = true))
         val gradleRunner = GradleRunner.create().withProjectDir(project.root)
 
         val buildScript = File(project.root, "workload/build.gradle.kts")
