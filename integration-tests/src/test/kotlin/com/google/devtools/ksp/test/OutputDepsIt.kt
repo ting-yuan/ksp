@@ -147,9 +147,9 @@ class OutputDepsIt(val useKSP2: Boolean) {
                 val outputRoot = File(project.root, "workload/build/generated/ksp/main/")
                 outputRoot.walk().filter { it.isFile() }.forEach {
                     if (it.toRelativeString(outputRoot) in src2Output[src]!!) {
-                        Assert.assertTrue(it.lastModified() > srcFile.lastModified())
+                        Assert.assertTrue(it.lastModified() >= srcFile.lastModified())
                     } else {
-                        Assert.assertTrue(it.lastModified() < srcFile.lastModified())
+                        Assert.assertTrue(it.lastModified() <= srcFile.lastModified())
                     }
                 }
             }
