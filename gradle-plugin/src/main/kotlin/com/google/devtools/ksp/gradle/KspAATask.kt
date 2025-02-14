@@ -438,31 +438,26 @@ interface KspAAWorkParameter : WorkParameters {
     var isInputChangeIncremental: Boolean
 }
 
-var isolatedClassLoaderCache = mutableMapOf<String, URLClassLoader>()
+private val classLoaderCache = mutableMapOf<Pair<String, ClassLoader>, URLClassLoader>()
+private fun getClassLoader(classpath: Collection<File>, parent: ClassLoader, cached: Boolean = true): URLClassLoader {
+    val urls = classpath.map { it.toURI().toURL() }
+    val key = Pair(urls.joinToString { it.path }, parent)
+    synchronized(classLoaderCache) {
+        if (classLoaderCache[key] == null || !cached)
+            classLoaderCache[key] = URLClassLoader(urls.toTypedArray(), parent)
+    }
+    return classLoaderCache[key]!!
+}
 
 abstract class KspAAWorkerAction : WorkAction<KspAAWorkParameter> {
     override fun execute() {
         val gradleCfg = parameters.config
-        val kspClasspath = parameters.kspClasspath
-        val key = kspClasspath.files.map { it.toURI().toURL() }.joinToString { it.path }
-        synchronized(isolatedClassLoaderCache) {
-            if (isolatedClassLoaderCache[key] == null) {
-                isolatedClassLoaderCache[key] = URLClassLoader(
-                    kspClasspath.files.map { it.toURI().toURL() }.toTypedArray(),
-                    ClassLoader.getPlatformClassLoader()
-                )
-            }
-        }
-        val isolatedClassLoader = isolatedClassLoaderCache[key]!!
+        val isolatedClassLoader = getClassLoader(parameters.kspClasspath.files, ClassLoader.getPlatformClassLoader())
+        val processorClassloader = getClassLoader(gradleCfg.processorClasspath.files, isolatedClassLoader, cached = false)
 
         // Clean stale files for now.
         // TODO: support incremental processing.
         gradleCfg.outputBaseDir.get().deleteRecursively()
-
-        val processorClassloader = URLClassLoader(
-            gradleCfg.processorClasspath.files.map { it.toURI().toURL() }.toTypedArray(),
-            isolatedClassLoader
-        )
 
         val excludedProcessors = gradleCfg.excludedProcessors.get()
         val processorProviders = ServiceLoader.load(
