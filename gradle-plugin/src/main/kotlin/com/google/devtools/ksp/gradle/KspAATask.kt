@@ -448,12 +448,14 @@ private fun getClassLoader(classpath: Collection<File>, parent: ClassLoader, cac
     }
     return classLoaderCache[key]!!
 }
+private val doNotGC = mutableListOf<Any>()
 
 abstract class KspAAWorkerAction : WorkAction<KspAAWorkParameter> {
     override fun execute() {
         val gradleCfg = parameters.config
         val isolatedClassLoader = getClassLoader(parameters.kspClasspath.files, ClassLoader.getPlatformClassLoader())
         val processorClassloader = getClassLoader(gradleCfg.processorClasspath.files, isolatedClassLoader, cached = false)
+        doNotGC.add(processorClassloader)
 
         // Clean stale files for now.
         // TODO: support incremental processing.
