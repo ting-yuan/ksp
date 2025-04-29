@@ -23,7 +23,9 @@ import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 
 class ImplicitElementProcessor : AbstractTestProcessor() {
@@ -91,6 +93,18 @@ class ImplicitElementProcessor : AbstractTestProcessor() {
         listOf("Test", "lib.Test").forEach { clsName ->
             resolver.getClassDeclarationByName(clsName)!!.let { cls ->
                 cls.getDeclaredProperties().single().let { annotated ->
+                    result.add(
+                        "$clsName, $annotated: ${annotated.annotations.toList().map {
+                            "${it.shortName.asString()}: ${ it.useSiteTarget }"
+                        }}"
+                    )
+                }
+            }
+        }
+
+        listOf("java.util.List", "kotlin.collections.List").forEach { clsName ->
+            resolver.getClassDeclarationByName(clsName)!!.let { cls ->
+                cls.getDeclaredFunctions().sortedBy { it.simpleName.asString() }.forEach { annotated ->
                     result.add(
                         "$clsName, $annotated: ${annotated.annotations.toList().map {
                             "${it.shortName.asString()}: ${ it.useSiteTarget }"
