@@ -21,8 +21,15 @@
 // @field @MyNestedAnnotation: MyNestedAnnotation
 // @property: @MyNestedAnnotation: MyNestedAnnotation
 // @setparam: @MyNestedAnnotation: MyNestedAnnotation
+// MyClass: @Inner
+// MyClass from resolver: @Inner
 // END
 
+annotation class OuterAnno {
+    annotation class InnerAnno
+}
+
+@Outer.Inner
 class MyClass(@param:MyNestedAnnotation param: String) {
     @field:MyNestedAnnotation
     val field: String = TODO()
@@ -33,3 +40,8 @@ class MyClass(@param:MyNestedAnnotation param: String) {
     annotation class MyNestedAnnotation
 }
 
+fun interface Example {
+    suspend fun exFun(
+        param: MyClass?,
+    )
+}

@@ -18,6 +18,7 @@
 package com.google.devtools.ksp.processor
 
 import com.google.devtools.ksp.getClassDeclarationByName
+import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSAnnotated
@@ -46,6 +47,17 @@ class NestedAnnotationProcessor : AbstractTestProcessor() {
         property.setter!!.parameter.annotations.forEach { annotation ->
             result.add("@setparam: $annotation: ${annotation.annotationType.resolve()}")
         }
+
+        myClass.annotations.forEach {
+            result.add("MyClass: $it")
+        }
+
+        val exFun = resolver.getClassDeclarationByName("Example")!!.getDeclaredFunctions().single()
+        val myClassResolved = exFun.parameters.first().type.resolve().declaration
+        myClassResolved.annotations.forEach {
+            result.add("MyClass from resolver: $it")
+        }
+
 
         return emptyList()
     }
