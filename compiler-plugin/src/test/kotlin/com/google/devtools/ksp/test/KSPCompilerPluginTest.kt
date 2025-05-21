@@ -315,6 +315,12 @@ class KSPCompilerPluginTest : AbstractKSPCompilerPluginTest() {
         runTest("../test-utils/testData/api/implicitPropertyAccessors.kt")
     }
 
+    @TestMetadata("implicitReturnTypes.kt")
+    @Test
+    fun testImplicitReturnTypes() {
+        runTest("../test-utils/testData/api/implicitReturnTypes.kt")
+    }
+
     @TestMetadata("inheritedTypeAlias.kt")
     @Test
     fun testInheritedTypeAlias() {
